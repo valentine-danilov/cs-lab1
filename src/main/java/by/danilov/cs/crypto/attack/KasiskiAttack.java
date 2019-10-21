@@ -15,6 +15,11 @@ public class KasiskiAttack {
         return suggestKeywordLength(cryptoText);
     }
 
+    /**
+     * Finds length of keyword, that was used to encrypt  text
+     * @param cryptoText - encrypted text
+     * @return - keyword length
+     */
     private Integer suggestKeywordLength(String cryptoText) {
 
         cryptoText = StringUtil.reduceNonLetter(cryptoText);
@@ -26,90 +31,24 @@ public class KasiskiAttack {
         }
 
         var distanceTable = getDistances(substringTable);
-        var factors = getNODs(distanceTable);
-        var factorsAsList = getFactorsAsSequentiallySortedList(factors);
+        var nods = getNODs(distanceTable);
+        var nodsAsList = getNODsAsSequentiallySortedList(nods);
 
-        if (factorsAsList.isEmpty()) {
+        if (nodsAsList.isEmpty()) {
             return MIN_LENGTH;
         }
 
-        return factorsAsList.get(0);
+        return nodsAsList.get(0);
 
     }
 
-
-    private List<Integer> getDistancesBetweenSubstrings(String cryptoText, Integer substringLength) {
-
-        List<Integer> distances = new ArrayList<>();
-
-        for (int i = 0; i < cryptoText.length() - substringLength + 1; i++) {
-            int endIndex1 = i + substringLength;
-            String substring1 = cryptoText.substring(i, endIndex1);
-            for (int j = i + 1; j < cryptoText.length() - substringLength + 1; j++) {
-                int endIndex2 = j + substringLength;
-                String substring2 = cryptoText.substring(j, endIndex2);
-                if (Objects.equals(substring1, substring2)) {
-                    distances.add(j - i);
-                }
-            }
-        }
-
-        return distances;
-    }
-
-    private List<Integer> getDistancesBetweenSubstrings(String cryptoText) {
-
-        List<Integer> distances = new ArrayList<>();
-
-        for (int i = MIN_LENGTH; i <= MAX_LENGTH; i++) {
-            distances.addAll(getDistancesBetweenSubstrings(cryptoText, i));
-        }
-
-        return distances;
-    }
-
-
-    private List<Integer> getAllDistancesForSubstring(String cryptoText,
-                                                      String substring) {
-
-        int substringLength = substring.length();
-        List<Integer> distances = new ArrayList<>();
-        int currentIndex = cryptoText.indexOf(substring) + substringLength;
-        int previousIndex = cryptoText.indexOf(substring);
-
-        while (currentIndex != -1) {
-            currentIndex = cryptoText.indexOf(substring, currentIndex);
-
-            if (currentIndex != -1) {
-                int length = currentIndex - previousIndex;
-                distances.add(length);
-                previousIndex = currentIndex;
-                currentIndex += substringLength;
-            }
-        }
-
-        return distances;
-
-    }
-
+    /**
+     * Find all substrings that repeats more than one time
+     * @param cryptoText - source encrypted text
+     * @param length - substring length
+     * @return map: <substring, list of indices of substring occurrences>
+     */
     private Map<String, List<Integer>> getRepeatableSubstrings(String cryptoText, Integer length) {
-
-/*        Set<String> repeatableSubstrings = new HashSet<>();
-
-        for (int j = 0; j < cryptoText.length() - length; j++) {
-
-            int end = j + length;
-            String substring = cryptoText.substring(j, end);
-
-            int currentIndex = cryptoText.indexOf(substring) + substring.length();
-
-            currentIndex = cryptoText.indexOf(substring, currentIndex);
-            currentIndex = cryptoText.indexOf(substring, currentIndex);
-
-            if (currentIndex != -1) {
-                repeatableSubstrings.add(substring);
-            }
-        }*/
 
         Map<String, List<Integer>> substringTable = new LinkedHashMap<>();
 
@@ -127,13 +66,22 @@ public class KasiskiAttack {
         return filterSubstrings(substringTable);
     }
 
+    /**
+     * Filter by number of substring occurrences
+     * @param substringTable - table to filter
+     * @return - filtered table
+     */
     private Map<String, List<Integer>> filterSubstrings(Map<String, List<Integer>> substringTable) {
         return substringTable.entrySet().stream()
                 .filter(list -> list.getValue().size() > 1)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-
+    /**
+     * Get map <substring, list of distances between adjacent substrings in text>
+     * @param substringTable - table: <string, list of indices>
+     * @return map <substring, list of distances between adjacent substrings in text>
+     */
     private Map<String, List<Integer>> getDistances(Map<String, List<Integer>> substringTable) {
         return substringTable.entrySet().stream()
                 .collect(Collectors.toMap(
@@ -142,6 +90,11 @@ public class KasiskiAttack {
                 ));
     }
 
+    /**
+     * Transform list of indices into list of distances
+     * @param indices - list of indices
+     * @return - list of distances
+     */
     private List<Integer> getDistances(List<Integer> indices) {
 
         List<Integer> distances = new ArrayList<>();
@@ -153,22 +106,22 @@ public class KasiskiAttack {
         return distances;
     }
 
-    private Integer getGCD(Map<String, List<Integer>> distanceTable) {
-        List<Integer> distances = new ArrayList<>();
-        distanceTable.forEach((key, value) -> distances.addAll(value));
-        List<Integer> filteredDistances = distances.stream()
-                .filter(distance -> distance <= MAX_LENGTH)
-                .filter(distance -> distance >= MIN_LENGTH)
-                .collect(Collectors.toList());
-        return MathUtil.getGCD(filteredDistances);
-    }
-
+    /**
+     * Get list of all distances NOD
+     * @param distancesTable - initial table: <substring, distances>
+     * @return - list of NODs
+     */
     private List<Integer> getNODs(Map<String, List<Integer>> distancesTable) {
         List<Integer> factors = new ArrayList<>();
         distancesTable.forEach((key, value) -> factors.addAll(getNODs(value)));
         return factors;
     }
 
+    /**
+     * Get list of NODs for each pair of distances
+     * @param distances - list of distances
+     * @return - list of NODs
+     */
     private List<Integer> getNODs(List<Integer> distances) {
 
         List<Integer> factors = new ArrayList<>();
@@ -179,23 +132,19 @@ public class KasiskiAttack {
             }
         }
 
-        /*for (Integer distance : distances) {
-            for (int i = 1; i <= (int) (Math.sqrt(distance) + 1); i++) {
-                if (distance % i == 0) {
-                    factors.add(i);
-                    factors.add(distance / i);
-                }
-            }
-        }*/
-
         return factors;
     }
 
-    private List<Integer> getFactorsAsSequentiallySortedList(List<Integer> factors) {
+    /**
+     * Sort NODs according to how many times is occurs in list
+     * @param nods - unsorted list of NODs
+     * @return - sorted list of NODs
+     */
+    private List<Integer> getNODsAsSequentiallySortedList(List<Integer> nods) {
 
         Map<Integer, Integer> factorSequenceTable = new TreeMap<>();
 
-        for (Integer factor : factors) {
+        for (Integer factor : nods) {
             if (factorSequenceTable.containsKey(factor)) {
                 Integer value = factorSequenceTable.get(factor);
                 factorSequenceTable.put(factor, ++value);

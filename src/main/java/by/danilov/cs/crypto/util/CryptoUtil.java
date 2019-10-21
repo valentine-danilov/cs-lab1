@@ -1,7 +1,6 @@
 package by.danilov.cs.crypto.util;
 
 import static by.danilov.cs.crypto.util.StringUtil.isLetter;
-import static by.danilov.cs.crypto.util.StringUtil.isUpperCase;
 
 public class CryptoUtil {
 
@@ -20,18 +19,14 @@ public class CryptoUtil {
 
         int characterCode = symbol.codePointAt(0);
 
-        //if (isUpperCase(symbol)) {
         return transformUppercase(characterCode, offset, encrypt);
-        //} else {
-        //    return transformLowercase(characterCode, offset, encrypt);
-        //}
     }
 
     public static Integer getOffset(String keyword, Integer index) {
         return (keyword.codePointAt(index % keyword.length()) - 97) % 26;
     }
 
-    public static String transformUppercase(Integer characterCode, Integer offset, boolean encrypt) {
+    private static String transformUppercase(Integer characterCode, Integer offset, boolean encrypt) {
         if (encrypt) {
             return String.valueOf((char) (((characterCode + offset - 65) % 26) + 65));
         } else {
