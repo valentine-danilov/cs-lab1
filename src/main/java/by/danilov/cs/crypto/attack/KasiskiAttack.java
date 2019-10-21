@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 
 public class KasiskiAttack {
 
+    /*Min keyword length*/
     private static final Integer MIN_LENGTH = 3;
+    /*Max keyword length*/
     private static final Integer MAX_LENGTH = 30;
 
     public Integer perform(String cryptoText) {
@@ -16,7 +18,7 @@ public class KasiskiAttack {
     }
 
     /**
-     * Finds length of keyword, that was used to encrypt  text
+     * Find length of keyword, that was used to encrypt  text
      * @param cryptoText - encrypted text
      * @return - keyword length
      */
@@ -24,21 +26,23 @@ public class KasiskiAttack {
 
         cryptoText = StringUtil.reduceNonLetter(cryptoText);
 
+        /*Map: <substring, list of indices of each substring occurrence>*/
         Map<String, List<Integer>> substringTable = new LinkedHashMap<>();
 
+        /*Find map of substrings of each length between min and max possible lengths*/
         for (int i = MIN_LENGTH; i < MAX_LENGTH; i++) {
             substringTable.putAll(getRepeatableSubstrings(cryptoText, i));
         }
 
         var distanceTable = getDistances(substringTable);
-        var nods = getNODs(distanceTable);
-        var nodsAsList = getNODsAsSequentiallySortedList(nods);
+        var GCDs = getGCDs(distanceTable);
+        var GCDsAsList = getGCDsAsSequentiallySortedList(GCDs);
 
-        if (nodsAsList.isEmpty()) {
+        if (GCDsAsList.isEmpty()) {
             return MIN_LENGTH;
         }
 
-        return nodsAsList.get(0);
+        return GCDsAsList.get(0);
 
     }
 
@@ -107,22 +111,22 @@ public class KasiskiAttack {
     }
 
     /**
-     * Get list of all distances NOD
+     * Get list of all distances GCD
      * @param distancesTable - initial table: <substring, distances>
-     * @return - list of NODs
+     * @return - list of GCDs
      */
-    private List<Integer> getNODs(Map<String, List<Integer>> distancesTable) {
+    private List<Integer> getGCDs(Map<String, List<Integer>> distancesTable) {
         List<Integer> factors = new ArrayList<>();
-        distancesTable.forEach((key, value) -> factors.addAll(getNODs(value)));
+        distancesTable.forEach((key, value) -> factors.addAll(getGCDs(value)));
         return factors;
     }
 
     /**
-     * Get list of NODs for each pair of distances
+     * Get list of GCDs for each pair of distances
      * @param distances - list of distances
-     * @return - list of NODs
+     * @return - list of GCDs
      */
-    private List<Integer> getNODs(List<Integer> distances) {
+    private List<Integer> getGCDs(List<Integer> distances) {
 
         List<Integer> factors = new ArrayList<>();
 
@@ -136,26 +140,32 @@ public class KasiskiAttack {
     }
 
     /**
-     * Sort NODs according to how many times is occurs in list
-     * @param nods - unsorted list of NODs
-     * @return - sorted list of NODs
+     * Sort GCDs according to how many times they occur in list
+     * @param GCDs - unsorted list of GCDs
+     * @return - sorted list of GCDs
      */
-    private List<Integer> getNODsAsSequentiallySortedList(List<Integer> nods) {
+    private List<Integer> getGCDsAsSequentiallySortedList(List<Integer> GCDs) {
 
-        Map<Integer, Integer> factorSequenceTable = new TreeMap<>();
+        /*
+        Map: <GCD, how many times GCD occurs>
+         */
+        Map<Integer, Integer> GCDSequenceTable = new TreeMap<>();
 
-        for (Integer factor : nods) {
-            if (factorSequenceTable.containsKey(factor)) {
-                Integer value = factorSequenceTable.get(factor);
-                factorSequenceTable.put(factor, ++value);
+        for (Integer factor : GCDs) {
+            if (GCDSequenceTable.containsKey(factor)) {
+                Integer value = GCDSequenceTable.get(factor);
+                GCDSequenceTable.put(factor, ++value);
             } else {
-                factorSequenceTable.put(factor, 1);
+                GCDSequenceTable.put(factor, 1);
             }
         }
 
-        return factorSequenceTable.entrySet().stream()
+        return GCDSequenceTable.entrySet().stream()
+                /* sort by number of GCD's occurrences*/
                 .sorted((o1, o2) -> o2.getValue().compareTo(o1.getValue()))
+                /*Transform map to list of GCDs*/
                 .map(Map.Entry::getKey)
+                /* Filter out GCDs that can't be keywords */
                 .filter(factor -> factor <= MAX_LENGTH)
                 .filter(factor -> factor >= MIN_LENGTH)
                 .collect(Collectors.toList());

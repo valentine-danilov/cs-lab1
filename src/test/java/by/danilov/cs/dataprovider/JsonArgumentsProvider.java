@@ -16,7 +16,7 @@ public class JsonArgumentsProvider implements ArgumentsProvider {
         ObjectMapper objectMapper = new ObjectMapper();
         TestData testData = null;
         try {
-            testData = objectMapper.readValue(new File("src\\test\\resources\\test-data.json"), TestData.class);
+            testData = objectMapper.readValue(new File("src\\test\\resources\\test-data1.json"), TestData.class);
             return testData.getTestCases().stream()
                     .map(testCase -> Arguments.of(testCase.getText(), testCase.getKeyword()));
         } catch (IOException e) {
